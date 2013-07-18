@@ -557,6 +557,24 @@ class Map {
 	private $clustering_options = array();
 
 	/**
+	 * markerwithlabel_js 
+	 *
+	 * Location of the js library file
+	 * 
+	 * @var string
+	 * @access private
+	 */
+	private $markerwithlabel_js;
+
+	/**
+	 * markerwithlabel_options 
+	 * 
+	 * @var array
+	 * @access private
+	 */
+	private $markerwithlabel_options;
+
+	/**
 	* Places library flag
 	* 
 	* @var bool
@@ -1776,6 +1794,9 @@ class Map {
 		if ( $this->clustering_js ) {
 			$header_js .= sprintf( "\n<script type=\"text/javascript\" src=\"%s\"></script>", $this->clustering_js );
 		}
+		if ( $this->markerwithlabel_js ) {
+			$header_js .= sprintf( "\n<script type=\"text/javascript\" src=\"%s\"></script>", $this->markerwithlabel_js );
+		}
 		return $header_js;
 	}
 
@@ -2042,6 +2063,9 @@ class Map {
 	  		if ( $this->stagger_markers ) {
 				$output .= sprintf( "\tthis.markers[%s] = {\n", $marker_id );
 			}
+			else if( $marker->isMarkerWithLabel() ) {
+				$output .= sprintf( "\tthis.markers[%s] = new google.maps.MarkerWithLabel({\n", $marker_id );
+			}
 			else {
 				$output .= sprintf( "\tthis.markers[%s] = new google.maps.Marker({\n", $marker_id );
 			}
@@ -2095,6 +2119,9 @@ class Map {
 	  	}
 	  	if ( $this->clustering_js ) {
 			$output .= sprintf( "\n\tvar markerCluster = new MarkerClusterer(this.map, this.markers, %s);\n", $this->phpToJs( $this->clustering_options ) );
+		}
+	  	if ( $this->markerwithlabel_options ) {
+			$output .= sprintf( "\n\tvar markerWithLabel = new MarkerWithLabel(%s);\n", preg_replace( '/(.*)}$/', "$1,map:this.map,labelAnchor:new google.maps.Point(22, 0)}", $this->parseLatLngs( $this->phpToJs( $this->markerwithlabel_options ) ) ) );
 		}
 		if ( count( $this->ground_overlays ) ) {
 			$output .= "\tthis.ground_overlays = [];\n";
@@ -2293,7 +2320,7 @@ class Map {
 	 * @access private
 	 */
 	private function parseLatLngs( $str ) {
-		return preg_replace( '~{"lat":(.*?),"lng":(.*?),.*?}~i', 'new google.maps.LatLng($1,$2)', $str );
+		return preg_replace( '~{"lat":"?(.*?)"?,"lng":"?(.*?)"?(,.*?)?}~i', 'new google.maps.LatLng($1,$2)', $str );
 	}
 
 	/**
@@ -2461,6 +2488,36 @@ class Map {
 			unset( $options["autocomplete_input_id"] );
 			$this->autocomplete_options = $options;
 		}
+	}
+
+	/**
+	 * Enable label with marker
+	 * 
+	 * Add a label under the marker
+	 *
+	 * @link http://google-maps-utility-library-v3.googlecode.com/svn/tags/markerwithlabel
+	 *
+	 * @param string $markerwithlabel_js_file Location of the library file
+	 * @param array $options 
+	 * @access public
+	 * @return void
+	 */
+	function enableMarkerWithLabel( $markerwithlabel_js_file, array $options = array() ) {
+		$this->markerwithlabel_js = $markerwithlabel_js_file;
+		$this->markerwithlabel_options = $options;
+	}
+
+	/**
+	 * Parameters of marker with label
+	 * 
+	 * @link http://google-maps-utility-library-v3.googlecode.com/svn/tags/markerwithlabel
+	 *
+	 * @param array $options 
+	 * @access public
+	 * @return void
+	 */
+	function setMarkerWithLabelOptions( array $options ) {
+		$this->markerwithlabel_options = $options;
 	}
 
 }
