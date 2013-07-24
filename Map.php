@@ -334,6 +334,14 @@ class Map {
 	private $marker_shapes = array();
 
 	/**
+	 * marker_symbols 
+	 * 
+	 * @var array
+	 * @access private
+	 */
+	private $marker_symbols = array();
+
+	/**
 	 * Marker Groups
 	 * All the maps marker groups
 	 *
@@ -2000,6 +2008,12 @@ class Map {
 				$output .= sprintf( "\t\tnew google.maps.Point(%s, %s),\n", (int)$marker_icon->origin_x, (int)$marker_icon->origin_y );
 				$output .= sprintf( "\t\tnew google.maps.Point(%s, %s)\n", (int)$marker_icon->anchor_x, (int)$marker_icon->anchor_y );
 				$output .= "\t);\n";
+	  	}
+
+		if ( count( $this->marker_symbols ) ) {
+			$output .= sprintf( "\n\tthis.marker_symbols = [];\n", $this->map_id );
+		  	foreach ( $this->marker_symbols as $marker_symbol_id => $marker_symbol ) {
+					$output .= sprintf( "\tthis.marker_symbols[%s] = {path:google.maps.SymbolPath.%s, scale:%d, strokeWeight:%d, fillColor:'%s', fillOpacity:%d}\n", $marker_symbol_id, $marker_symbol->path, $marker_symbol->scale, $marker_symbol->stroke_weight, $marker_symbol->fill_color, $marker_symbol->fill_opacity );
 		  	}
 	  	}
 
@@ -2042,6 +2056,9 @@ class Map {
 	  		if ( $this->stagger_markers ) {
 				$output .= sprintf( "\tthis.markers[%s] = {\n", $marker_id );
 			}
+			else if( $marker->isMarkerWithLabel() ) {
+				$output .= sprintf( "\tthis.markers[%s] = new google.maps.MarkerWithLabel({\n", $marker_id );
+			}
 			else {
 				$output .= sprintf( "\tthis.markers[%s] = new google.maps.Marker({\n", $marker_id );
 			}
@@ -2062,6 +2079,9 @@ class Map {
 			}
 			if ( is_int( $marker->_shape_id ) ) {
 				$output .= sprintf( "\t\tshape:this.marker_shapes[%s],\n", $marker->_shape_id );
+			}
+			if ( is_int( $marker->_symbol_id ) ) {
+				$output .= sprintf( "\t\ticon:this.marker_symbols[%s],\n", $marker->_symbol_id );
 			}
 			if ( count( $marker->groups ) ) {
 				$gs = $this->marker_groups;
@@ -2095,6 +2115,9 @@ class Map {
 	  	}
 	  	if ( $this->clustering_js ) {
 			$output .= sprintf( "\n\tvar markerCluster = new MarkerClusterer(this.map, this.markers, %s);\n", $this->phpToJs( $this->clustering_options ) );
+		}
+	  	if ( $this->markerwithlabel_options ) {
+			$output .= sprintf( "\n\tvar markerWithLabel = new MarkerWithLabel(%s);\n", preg_replace( '/(.*)}$/', "$1,map:this.map,labelAnchor:new google.maps.Point(22, 0)}", $this->parseLatLngs( $this->phpToJs( $this->markerwithlabel_options ) ) ) );
 		}
 		if ( count( $this->ground_overlays ) ) {
 			$output .= "\tthis.ground_overlays = [];\n";
@@ -2293,7 +2316,7 @@ class Map {
 	 * @access private
 	 */
 	private function parseLatLngs( $str ) {
-		return preg_replace( '~{"lat":(.*?),"lng":(.*?),.*?}~i', 'new google.maps.LatLng($1,$2)', $str );
+		return preg_replace( '~{"lat":"?(.*?)"?,"lng":"?(.*?)"?(,.*?)?}~i', 'new google.maps.LatLng($1,$2)', $str );
 	}
 
 	/**
@@ -2378,6 +2401,15 @@ class Map {
 						$marker->_shadow_id = count( $this->marker_icons ) - 1;
 		  			}
 				}
+			}
+			if ( $marker->symbol instanceof \PHPGoogleMaps\Overlay\MarkerSymbol ) {
+				if ( ( $symbol_id = array_search( $marker->symbol, $this->marker_symbols ) ) !== false ) {
+		  			$marker->_symbol_id = $symbol_id;
+	  			}
+	  			else {
+		  			$this->marker_symbols[] = $marker->symbol;
+		  			$marker->_symbol_id = count( $this->marker_symbols ) - 1;
+	  			}
 			}
   			if ( $marker->shape instanceof \PHPGoogleMaps\Overlay\MarkerShape ) {
 				if ( ( $shape_id = array_search( $marker->shape, $this->marker_shapes ) ) !== false ) {

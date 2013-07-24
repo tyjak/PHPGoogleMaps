@@ -43,6 +43,13 @@ class Marker extends \PHPGoogleMaps\Core\StaticMapObject {
 	 * @var MarkerIcon
 	 */
 	protected $icon;
+
+	/**
+	 * The marker's symbol 
+	 * 
+	 * @var MarkerSymbol
+	 */
+	protected $symbol;
 	
 	/**
 	 * The marker's icon shadow
@@ -93,6 +100,9 @@ class Marker extends \PHPGoogleMaps\Core\StaticMapObject {
 					break;
 				case 'icon':
 					$this->setIcon( $option );
+					break;
+				case 'symbol':
+					$this->setSymbol( $option );
 					break;
 				case 'static':
 					$this->static = (object)$option;
@@ -205,6 +215,32 @@ class Marker extends \PHPGoogleMaps\Core\StaticMapObject {
 	public function setShape( MarkerShape $shape ) {
 		$this->shape = $shape;
 		return $this;
+	}
+
+	/**
+	 * Sets the marker's symbol
+	 *
+	 * @param $path The marker's symbol path.
+	 * @return Marker
+	 */
+	public function setSymbol( $path ) {
+		if ( !$symbol instanceof MarkerSmbol ) {
+			$symbol = new MarkerSymbol( $path );
+		}
+		$this->symbol = $symbol;
+		return $this;
+	}
+
+	/**
+	 * Get the pah of the symbol
+	 *
+	 * @return string
+	 */
+	public function getSymbolPath() {
+		if ( isset( $this->symbol->path ) ) {
+			return $this->symbol->path;
+		}
+		return null;
 	}
 
 	/**
